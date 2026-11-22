@@ -230,15 +230,45 @@
       DEFAULT_WORDS.map(w=>w.toUpperCase()).sort((a,b)=>b.length-a.length).forEach(w=>{if(w.length<=GRID_SIZE&&tryPlace(w))wordList.push(w);});
       for(let r=0;r<GRID_SIZE;r++)for(let c=0;c<GRID_SIZE;c++)if(!grid[r][c])grid[r][c]=String.fromCharCode(65+randInt(0,25));
       foundWords=[]; selected=[]; render();
+      attachGridListeners();
     }
+    function attachGridListeners(){
+      if (gridEl.dataset.listeners) return;
+      gridEl.dataset.listeners = '1';
+      gridEl.style.touchAction = 'none';
+
+      gridEl.addEventListener('pointerdown', (e) => {
+        const cell = e.target.closest('.cell');
+        if (!cell) return;
+        e.preventDefault();
+        start(+cell.dataset.r, +cell.dataset.c);
+      });
+
+      gridEl.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const cell = el && el.closest ? el.closest('.cell') : null;
+        if (!cell || !gridEl.contains(cell)) return;
+        move(+cell.dataset.r, +cell.dataset.c);
+      });
+
+      const finish = (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        end();
+      };
+      gridEl.addEventListener('pointerup', finish);
+      gridEl.addEventListener('pointercancel', finish);
+      gridEl.addEventListener('pointerleave', finish);
+    }
+
     function render(){
       gridEl.innerHTML='';
       for(let r=0;r<GRID_SIZE;r++)for(let c=0;c<GRID_SIZE;c++){
         const cell=document.createElement('div');
         cell.className='cell'; cell.textContent=grid[r][c];
-        cell.addEventListener('pointerdown',(e)=>{e.preventDefault();start(r,c);});
-        cell.addEventListener('pointerenter',()=>{if(dragging)move(r,c);});
-        cell.addEventListener('pointerup',()=>{if(dragging)end();});
+        cell.dataset.r=r; cell.dataset.c=c;
         gridEl.appendChild(cell);
       }
       listEl.innerHTML='';
